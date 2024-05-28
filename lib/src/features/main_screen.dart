@@ -8,10 +8,12 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final TextEditingController _zipController = TextEditingController();
+  Future<String>? _cityFuture;
+
   @override
   void initState() {
     super.initState();
-    // TODO: initiate controllers
   }
 
   @override
@@ -21,21 +23,26 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.all(8.0),
         child: Center(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const TextField(
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), labelText: "Postleitzahl"),
+              TextField(
+                controller: _zipController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: "Postleitzahl",
+                ),
               ),
               const SizedBox(height: 32),
               OutlinedButton(
                 onPressed: () {
-                  // TODO: implementiere Suche
+                  setState(() {
+                    _cityFuture = getCityFromZip(_zipController.text);
+                  });
                 },
                 child: const Text("Suche"),
               ),
               const SizedBox(height: 32),
-              Text("Ergebnis: Noch keine PLZ gesucht",
-                  style: Theme.of(context).textTheme.labelLarge),
+              _buildResult(),
             ],
           ),
         ),
@@ -43,14 +50,46 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Widget _buildResult() {
+    if (_cityFuture == null) {
+      return Text(
+        "Ergebnis: Noch keine PLZ gesucht",
+        style: Theme.of(context).textTheme.labelLarge,
+      );
+    }
+    return FutureBuilder<String>(
+      future: _cityFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text(
+            'Fehler: ${snapshot.error}',
+            style: Theme.of(context).textTheme.labelLarge,
+          );
+        } else if (snapshot.hasData) {
+          return Text(
+            'Ergebnis: ${snapshot.data}',
+            style: Theme.of(context).textTheme.labelLarge,
+          );
+        } else {
+          return Text(
+            'Unbekannter Fehler',
+            style: Theme.of(context).textTheme.labelLarge,
+          );
+        }
+      },
+    );
+  }
+
   @override
   void dispose() {
-    // TODO: dispose controllers
+    _zipController.dispose();
     super.dispose();
   }
 
   Future<String> getCityFromZip(String zip) async {
-    // simuliere Dauer der Datenbank-Anfrage
+    // Simuliere Dauer der Datenbank-Anfrage
     await Future.delayed(const Duration(seconds: 3));
 
     switch (zip) {
